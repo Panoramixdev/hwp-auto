@@ -1,0 +1,59 @@
+name: Agile Pipeline Integratie voor hwp-auto
+
+on:
+  push:
+    branches:
+      - main  # Actie uitvoeren bij elke push naar de 'main' branch
+  workflow_dispatch: # Mogelijkheid om handmatig te starten via GitHub Actions
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: Bouw en Integratie met Agile Pipeline
+
+    steps:
+    # Stap 1: Haal de laatste code op uit de repository
+    - name: Code ophalen uit repository
+      uses: actions/checkout@v2
+
+    # Stap 2: Installeer Docker en Docker Compose
+    - name: Docker en Docker Compose installeren
+      run: |
+        sudo apt-get update
+        sudo apt-get install docker.io docker-compose -y
+
+    # Stap 3: Genereer dynamisch het docker-compose.yml bestand
+    - name: Genereer Docker Compose bestand
+      run: |
+        python3 scripts/app.py
+
+    # Stap 4: Start Docker containers
+    - name: Start Docker containers
+      run: |
+        docker-compose -f docker/docker-compose.yml up -d --build
+
+    # Stap 5: Integreer met Agile Pipeline via n8n
+    - name: Start n8n workflows voor Agile Pipeline
+      run: |
+        docker exec n8n-automation n8n import:workflow --all
+        docker exec n8n-automation n8n start
+
+    # Stap 6: Verbind WordPress met AI-processen in Agile Pipeline
+    - name: AI-automatisering via Ollama LLM
+      run: |
+        docker exec app-server python3 scripts/ai_integration.py
+
+    # Stap 7: Automatische taakcreatie in Taiga
+    - name: Maak taken aan in Taiga
+      run: |
+        docker exec app-server python3 scripts/taiga_integration.py
+
+    # Stap 8: Voer healthchecks uit om de integratie te valideren
+    - name: Healthchecks uitvoeren
+      run: |
+        sh scripts/healthcheck.sh
+
+    # Stap 9: Containers opruimen na de integratie
+    - name: Opruimen van containers
+      run: |
+        docker-compose -f docker/docker-compose.yml down
