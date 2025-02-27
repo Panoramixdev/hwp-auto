@@ -1,0 +1,86 @@
+name: Automatische Back-up en Herstel voor hwp-auto
+
+on:
+  schedule:
+    - cron: '0 3 * * *' # Dagelijkse back-up om 03:00 uur
+  workflow_dispatch: # Handmatig starten via GitHub Actions interface
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    name: Maak automatische back-up van WordPress en database
+
+    steps:
+    # Stap 1: Haal de laatste code op uit de repository
+    - name: Code ophalen uit repository
+      uses: actions/checkout@v2
+
+    # Stap 2: Installeer Docker en Docker Compose
+    - name: Docker installeren
+      run: |
+        sudo apt-get update
+        sudo apt-get install docker.io docker-compose -y
+
+    # Stap 3: Start Docker containers voor toegang tot WordPress en database
+    - name: Start Docker containers
+      run: |
+        docker-compose -f docker/docker-compose.yml up -d
+
+    # Stap 4: Voer het back-up script uit
+    - name: Maak back-up van WordPress en database
+      run: |
+        sh scripts/backup_and_restore.sh backup
+
+    # Stap 5: Upload de back-upbestanden als artifact naar GitHub
+    - name: Upload back-upbestanden
+      uses: actions/upload-artifact@v2
+      with:
+        name: wordpress-backup
+        path: /var/www/html/backups
+
+    # Stap 6: Containers opruimen na de back-up
+    - name: Opruimen van containers
+      run: |
+        docker-compose -f docker/docker-compose.yml down
+
+  restore:
+    runs-on: ubuntu-latest
+    needs: backup
+    name: Herstel WordPress en database vanuit een back-up
+
+    steps:
+    # Stap 1: Haal de laatste code op uit de repository
+    - name: Code ophalen uit repository
+      uses: actions/checkout@v2
+
+    # Stap 2: Download de back-upbestanden van GitHub artifacts
+    - name: Download back-upbestanden
+      uses: actions/download-artifact@v2
+      with:
+        name: wordpress-backup
+
+    # Stap 3: Installeer Docker en Docker Compose
+    - name: Docker installeren
+      run: |
+        sudo apt-get update
+        sudo apt-get install docker.io docker-compose -y
+
+    # Stap 4: Start Docker containers
+    - name: Start Docker containers
+      run: |
+        docker-compose -f docker/docker-compose.yml up -d
+
+    # Stap 5: Herstel de WordPress en database back-up
+    - name: Voer herstel uit
+      run: |
+        sh scripts/backup_and_restore.sh restore db_backup_latest.sql wp-content_latest.tar.gz
+
+    # Stap 6: Voer healthchecks uit om te valideren dat het herstel correct is
+    - name: Healthchecks uitvoeren
+      run: |
+        sh scripts/healthcheck.sh
+
+    # Stap 7: Opruimen van Docker containers na herstel
+    - name: Opruimen van containers
+      run: |
+        docker-compose -f docker/docker-compose.yml down

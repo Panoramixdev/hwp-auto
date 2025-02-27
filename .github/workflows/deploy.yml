@@ -1,0 +1,55 @@
+name: Automatisch Testen & Deployen van hwp-auto
+
+on:
+  push:
+    branches:
+      - main  # Voer actie uit bij elke push naar de 'main' branch
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Stap 1: Haal de laatste code op uit de repository
+    - name: Code ophalen uit repository
+      uses: actions/checkout@v2
+
+    # Stap 2: Installeer Docker en Docker Compose
+    - name: Docker installeren
+      run: |
+        sudo apt-get update
+        sudo apt-get install docker.io docker-compose -y
+
+    # Stap 3: Genereer dynamisch het docker-compose.yml bestand
+    - name: Genereer Docker Compose bestand
+      run: |
+        python3 scripts/app.py
+
+    # Stap 4: Start Docker containers op basis van het gegenereerde bestand
+    - name: Start Docker containers
+      run: |
+        docker-compose -f docker/docker-compose.yml up -d --build
+
+    # Stap 5: Voer healthchecks uit om de installatie te valideren
+    - name: Healthchecks uitvoeren
+      run: |
+        sh scripts/healthcheck.sh
+
+    # Stap 6: Test of de WordPress installatie correct is verlopen
+    - name: Test WordPress installatie
+      run: |
+        docker exec wordpress wp core is-installed --allow-root
+
+    # Stap 7: Test of alle plugins correct zijn geïnstalleerd
+    - name: Test WordPress plugins
+      run: |
+        docker exec wordpress wp plugin list --allow-root
+
+    # Stap 8: Opruimen van Docker containers na de tests
+    - name: Opruimen van containers
+      run: |
+        docker-compose -f docker/docker-compose.yml down
+

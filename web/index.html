@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="css/styles.css">
+    <title>hwp-auto Automatische Installatie</title>
+</head>
+<body>
+    <h1>Automatische Installatie van hwp-auto</h1>
+    <form id="installForm" action="/upload-config" method="post" enctype="multipart/form-data">
+        
+        <h2>Upload Intakeformulier (Excel)</h2>
+        <input type="file" name="config_file" accept=".xls,.xlsx" required><br><br>
+
+        <h2>Selecteer Plugins</h2>
+        <div id="plugin-container">
+            <!-- Dynamisch gegenereerde plugins komen hier -->
+        </div>
+
+        <button type="submit">Start Automatische Installatie</button>
+    </form>
+
+    <script src="js/form-handler.js"></script>
+</body>
+</html>
