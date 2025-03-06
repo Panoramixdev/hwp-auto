@@ -1,69 +1,161 @@
-// form-handler.js: Laadt plugins dynamisch uit available-plugins.json in het formulier
-// en controleert op compatibiliteit met de huidige WordPress versie
-
-window.onload = async function() {
-    try {
-        // Haal de huidige WordPress versie op via de API
-        const wpResponse = await fetch('/config/wp-version');
-        const wpVersion = await wpResponse.json();
-        const currentWpVersion = wpVersion.version;
-        console.log(`Huidige WordPress versie: ${currentWpVersion}`);
-
-        // Haal de pluginlijst op en filter op compatibiliteit
-        const pluginResponse = await fetch('/config/available-plugins.json');
-        if (!pluginResponse.ok) {
-            console.error("Kan available-plugins.json niet laden.");
-            return;
+document.addEventListener("DOMContentLoaded", async function () {
+    console.log("🚀 Page loaded, initializing...");
+  
+    // Bestands-input (Excel)
+    const excelInput = document.querySelector('input[name="config_file"]');
+    if (excelInput) {
+      excelInput.addEventListener("change", async () => {
+        const file = excelInput.files[0];
+        if (!file) return;
+  
+        // Direct uploaden naar /upload-excel
+        const fd = new FormData();
+        fd.append("excel_file", file);
+  
+        try {
+          const resp = await fetch("/upload-excel", {
+            method: "POST",
+            body: fd
+          });
+          const result = await resp.json();
+          if (result.status === "OK") {
+            console.log("✅ Excel geüpload, pluginlijst opnieuw genereren...");
+            await loadAvailablePlugins(); // Checkboxes updaten
+          } else {
+            console.error("⚠️ Fout bij /upload-excel", result);
+          }
+        } catch (err) {
+          console.error("Fout tijdens uploadExcel fetch:", err);
         }
-
-        const plugins = await pluginResponse.json();
-        const container = document.getElementById('plugin-container');
-
-        // Haal reeds geselecteerde plugins op uit config.json (indien beschikbaar)
-        const configResponse = await fetch('/config/config.json');
-        let selectedPlugins = [];
-        if (configResponse.ok) {
-            const config = await configResponse.json();
-            selectedPlugins = config.external_plugins || [];
-        }
-
-        // Groepeer plugins per categorie en voeg ze toe aan het formulier
-        Object.keys(plugins).forEach(category => {
-            const categoryDiv = document.createElement('div');
-            categoryDiv.className = 'plugin-category';
-            categoryDiv.innerHTML = `<h3>${category}</h3>`;
-
-            plugins[category].forEach(plugin => {
-                const isChecked = selectedPlugins.includes(plugin.url) ? 'checked' : '';
-
-                if (isCompatible(currentWpVersion, plugin.compatibility)) {
-                    categoryDiv.innerHTML += `
-                        <label>
-                            <input type="checkbox" name="plugins" value="${plugin.url}" ${isChecked}>
-                            ${plugin.name} (Compatibel met WP ${plugin.compatibility})
-                        </label><br>
-                    `;
-                } else {
-                    categoryDiv.innerHTML += `
-                        <label style="color: red;">
-                            ❌ ${plugin.name} (Niet compatibel met WP ${currentWpVersion})
-                        </label><br>
-                    `;
-                }
-            });
-
-            container.appendChild(categoryDiv);
-        });
-
-        console.log("✅ Pluginlijst succesvol geladen.");
-    } catch (error) {
-        console.error("Fout bij het laden van plugins: ", error);
+      });
     }
-};
-
-// Controleer of de plugin compatibel is met de huidige WordPress versie
-function isCompatible(currentVersion, compatibilityRange) {
-    const [minVersion, maxVersion] = compatibilityRange.split(' - ').map(v => parseFloat(v));
-    const wpVersion = parseFloat(currentVersion);
-    return wpVersion >= minVersion && wpVersion <= maxVersion;
-}
+  
+    // Form-element en handlers
+    const installForm = document.getElementById("installForm");
+    if (!installForm) {
+      console.error("⚠️ installForm not found!");
+      return;
+    }
+  
+    // Initieel: Probeer pluginlijst te laden
+    await loadAvailablePlugins();
+  
+    // Initieel: Probeer bestaande config.json te laden
+    await loadPreviousConfig();
+  
+    // Koppel de submit-handler voor de installatie
+    installForm.onsubmit = handleFormSubmit;
+  });
+  
+  /**
+   * Ophalen van de pluginlijst uit /config/available-plugins.json
+   */
+  async function loadAvailablePlugins() {
+    try {
+      console.log("🔄 Ophalen pluginlijst...");
+      const resp = await fetch('/config/available-plugins.json');
+      if (!resp.ok) {
+        console.warn("⚠️ Geen pluginlijst gevonden (404?).");
+        return;
+      }
+      const plugins = await resp.json();
+      console.log("✅ Plugins:", plugins);
+  
+      const container = document.getElementById('plugin-container');
+      if (!container) {
+        console.warn("⚠️ Geen #plugin-container element gevonden in HTML");
+        return;
+      }
+      container.innerHTML = "";
+  
+      Object.keys(plugins).forEach(category => {
+        const catDiv = document.createElement('div');
+        catDiv.classList.add('plugin-category');
+        catDiv.innerHTML = `<h3>${category}</h3>`;
+        plugins[category].forEach(plugin => {
+          catDiv.innerHTML += `
+            <label>
+              <input type="checkbox" name="plugins" value="${plugin.url}">
+              ${plugin.name} ${plugin.compatibility !== "N/A" ? `(WP ${plugin.compatibility})` : "(Premium)"}
+            </label><br>
+          `;
+        });
+        container.appendChild(catDiv);
+      });
+    } catch (error) {
+      console.error("Fout bij loadAvailablePlugins:", error);
+    }
+  }
+  
+  /**
+   * Ophalen van de bestaande config.json (indien aanwezig)
+   */
+  async function loadPreviousConfig() {
+    try {
+      console.log("🔄 Ophalen config.json...");
+      const resp = await fetch('/config/config.json');
+      if (!resp.ok) {
+        console.warn("⚠️ config.json niet gevonden.");
+        return;
+      }
+      const config = await resp.json();
+      console.log("✅ Bestaande config:", config);
+  
+      document.getElementById('siteTitle').value = config.site_title || "";
+      document.getElementById('adminUser').value = config.admin_user || "";
+      document.getElementById('adminPassword').value = config.admin_password || "";
+      document.getElementById('adminEmail').value = config.admin_email || "";
+    } catch (error) {
+      console.error("Fout bij loadPreviousConfig:", error);
+    }
+  }
+  
+  /**
+   * Afhandeling van formulier-submissie: stuurt alles naar /upload-config
+   */
+  async function handleFormSubmit(event) {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+  
+    // Bepaal hostingType
+    const hostingType = document.getElementById("hostingType").value;
+    formData.append("hosting_type", hostingType);
+  
+    // Stel GraphQL endpoint op
+    let graphqlEndpoint;
+    if (hostingType === "hostinger") {
+      graphqlEndpoint = "https://example.com/graphql";
+    } else if (hostingType === "local") {
+      graphqlEndpoint = "http://localhost/wordpress/graphql";
+    } else {
+      graphqlEndpoint = "http://localhost:8080/graphql";
+    }
+  
+    // Geef endpoint door aan backend (/config/update-graphql)
+    try {
+      await fetch('/config/update-graphql', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ graphqlEndpoint })
+      });
+      console.log("✅ GraphQL endpoint doorgegeven.");
+    } catch (err) {
+      console.error("Fout bij update_graphql:", err);
+    }
+  
+    // Stuur formulier + Excel + gekozen plugins naar /upload-config
+    try {
+      const resp = await fetch('/upload-config', {
+        method: 'POST',
+        body: formData
+      });
+      const result = await resp.json();
+      console.log("Respons van /upload-config:", result);
+      alert(result.status || "Geen status ontvangen");
+    } catch (err) {
+      console.error("Fout bij /upload-config:", err);
+      alert("Installatie mislukt");
+    }
+  }
+  

@@ -1,0 +1,121 @@
+{
+  "E-commerce": [
+    {
+      "name": "WooCommerce",
+      "url": "https://downloads.wordpress.org/plugin/woocommerce.9.7.0.zip"
+    }
+  ],
+  "Optimalisatie": [
+    {
+      "name": "Redis Cache",
+      "url": "https://downloads.wordpress.org/plugin/redis-cache.2.5.4.zip"
+    }
+  ],
+  "Headless Tools": [
+    {
+      "name": "GraphQL Rank Math",
+      "url": "composer require axepress/wp-graphql-rank-math"
+    },
+    {
+      "name": "WPGraphQL for ACF",
+      "url": "https://downloads.wordpress.org/plugin/wpgraphql-acf.2.4.1.zip"
+    },
+    {
+      "name": "WooGraphQL",
+      "url": "https://woographql.com/api/downloads"
+    },
+    {
+      "name": "WPGraphQL Tax Query",
+      "url": "https://github.com/wp-graphql/wp-graphql-tax-query/archive/refs/tags/v0.2.0.zip"
+    },
+    {
+      "name": "WPGraphQL Smart Cache",
+      "url": "https://downloads.wordpress.org/plugin/wpgraphql-smart-cache.2.0.0.zip"
+    },
+    {
+      "name": "WPGraphQL Content Blocks (Structured Content)",
+      "url": "https://github.com/Quartz/wp-graphql-content-blocks/archive/refs/tags/0.4.0.zip"
+    },
+    {
+      "name": "Headless Mode",
+      "url": "https://downloads.wordpress.org/plugin/headless-mode.0.4.0.zip"
+    }
+  ],
+  "Premium Plugins": [
+    {
+      "name": "0fBFdJ1vr8LP-bit-integrations-pro-v2.4.4n",
+      "url": "/config/premium-plugins/0fBFdJ1vr8LP-bit-integrations-pro-v2.4.4n.zip",
+      "compatibility": "N/A"
+    },
+    {
+      "name": "0qP8ZUfFAmRL-seo-by-rank-math-pro-3.0.82",
+      "url": "/config/premium-plugins/0qP8ZUfFAmRL-seo-by-rank-math-pro-3.0.82.zip",
+      "compatibility": "N/A"
+    },
+    {
+      "name": "8SgBDCoH5vEK-acf-extended-pro-0.9.0.9",
+      "url": "/config/premium-plugins/8SgBDCoH5vEK-acf-extended-pro-0.9.0.9.zip",
+      "compatibility": "N/A"
+    },
+    {
+      "name": "acf-for-woocommerce",
+      "url": "/config/premium-plugins/acf-for-woocommerce.zip",
+      "compatibility": "N/A"
+    },
+    {
+      "name": "automatorwp-advanced-custom-fields",
+      "url": "/config/premium-plugins/automatorwp-advanced-custom-fields.zip",
+      "compatibility": "N/A"
+    },
+    {
+      "name": "CDXErI7hzOMs-newsletter-fluentforms-1.1.7",
+      "url": "/config/premium-plugins/CDXErI7hzOMs-newsletter-fluentforms-1.1.7.zip",
+      "compatibility": "N/A"
+    },
+    {
+      "name": "dV1mnyyiYGj8-wordfence-8.0.3",
+      "url": "/config/premium-plugins/dV1mnyyiYGj8-wordfence-8.0.3.zip",
+      "compatibility": "N/A"
+    },
+    {
+      "name": "EchQUwGdPBgI-fluentformpro-5.2.10",
+      "url": "/config/premium-plugins/EchQUwGdPBgI-fluentformpro-5.2.10.zip",
+      "compatibility": "N/A"
+    },
+    {
+      "name": "Fp1PuQhF14pd-automatorwp-fluentform",
+      "url": "/config/premium-plugins/Fp1PuQhF14pd-automatorwp-fluentform.zip",
+      "compatibility": "N/A"
+    },
+    {
+      "name": "mMawTQ0fL8nT-ithemes-security-pro-8.5.3",
+      "url": "/config/premium-plugins/mMawTQ0fL8nT-ithemes-security-pro-8.5.3.zip",
+      "compatibility": "N/A"
+    },
+    {
+      "name": "MTsdVui9hDvv-yith-woocommerce-social-login-premium",
+      "url": "/config/premium-plugins/MTsdVui9hDvv-yith-woocommerce-social-login-premium.zip",
+      "compatibility": "N/A"
+    },
+    {
+      "name": "r5YRptcgSjlN-mainwp-rocket-extension-5.1.2",
+      "url": "/config/premium-plugins/r5YRptcgSjlN-mainwp-rocket-extension-5.1.2.zip",
+      "compatibility": "N/A"
+    },
+    {
+      "name": "S5IbX4DFEKoM-automatorwp-webhooks-1.3.7",
+      "url": "/config/premium-plugins/S5IbX4DFEKoM-automatorwp-webhooks-1.3.7.zip",
+      "compatibility": "N/A"
+    },
+    {
+      "name": "WGlmlLL6miCm-automatorwp-5.1.5",
+      "url": "/config/premium-plugins/WGlmlLL6miCm-automatorwp-5.1.5.zip",
+      "compatibility": "N/A"
+    },
+    {
+      "name": "xxvyfvGMSCL4-wp-smush-pro-3.17.1",
+      "url": "/config/premium-plugins/xxvyfvGMSCL4-wp-smush-pro-3.17.1.zip",
+      "compatibility": "N/A"
+    }
+  ]
+}

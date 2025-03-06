@@ -1,12 +1,31 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
     <title>hwp-auto Automatische Installatie</title>
 </head>
 <body>
     <h1>Automatische Installatie van hwp-auto</h1>
     <form id="installForm" action="/upload-config" method="post" enctype="multipart/form-data">
+        <h2>Select Hosting Type</h2>
+<select id="hostingType" name="hosting_type">
+    <option value="hostinger">External WP (Hostinger or any other host)</option>
+    <option value="local">Local WP (installed without Docker)</option>
+    <option value="docker">Docker-based WP</option>
+</select>
+
+<h2>Website Instellingen</h2>
+<label for="siteTitle">Website Titel:</label>
+<input type="text" id="siteTitle" name="site_title" required><br><br>
+
+<label for="adminUser">Admin Gebruiker:</label>
+<input type="text" id="adminUser" name="admin_user" required><br><br>
+
+<label for="adminPassword">Admin Wachtwoord:</label>
+<input type="password" id="adminPassword" name="admin_password" required><br><br>
+
+<label for="adminEmail">Admin E-mail:</label>
+<input type="email" id="adminEmail" name="admin_email" required><br><br>
         
         <h2>Upload Intakeformulier (Excel)</h2>
         <input type="file" name="config_file" accept=".xls,.xlsx" required><br><br>
@@ -19,6 +38,6 @@
         <button type="submit">Start Automatische Installatie</button>
     </form>
 
-    <script src="js/form-handler.js"></script>
+    <script src="{{ url_for('static', filename='js/form-handler.js') }}"></script>
 </body>
 </html>

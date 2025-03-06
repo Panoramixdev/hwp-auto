@@ -1,0 +1,169 @@
+
+
+1**. Project Goals**
+
+Main Objective:
+Provide a fully automated installation of WordPress, including plugins, configurations, and hosting selection.
+Allow users to install WordPress on different hosting environments (Docker, Local, External/Plesk).
+Automate plugin installations from both Excel-based lists and locally stored premium plugin files.
+Ensure headless WordPress integration for future frontend usage.
+
+Key Features:
+User uploads completes the form details (site name, admin credentials, selected plugins, etc.).
+WordPress is installed automatically based on the selected hosting method.
+Plugins are installed dynamically (based on Excel selection and premium plugin folder).
+Docker automation (if selected, a docker-compose.yml is generated and executed).
+GraphQL integration (for seamless Next.js/Headless integration).
+Future-proof scalability (so additional features can be added later).
+
+2. Pages & Functionalities
+
+1. Installation Form (index.html)
+
+Functionality (of the installation form):
+
+Offers hosting selection via dropdown (Docker, Local, External).
+Allows users to upload an Excel file with plugin list ( structure-> A= Category, B= Name, C= Plugin URL ,D=version).
+	
+Allows users to select plugins from the available list.
+Automatically triggers the installation process upon submission.
+
+2. Backend (app.py)
+
+Functionality:
+Handles form submission and reads Excel data.
+Generates config.json based on user input.
+Calls generate_docker_compose.py if Docker is selected.
+Generates available-plugins.json after reading Excel data.
+Handles plugin installations from both Excel-based lists and premium plugin folder.
+
+3. Plugin Management (form-handler.js)
+
+Functionality:
+
+Fetches available plugins dynamically after uploading the Excel file.
+Ensures that only valid plugins are displayed. 
+Prevents duplicate plugin lists.
+Handles plugin selections and form submission.
+
+4. GraphQL Configuration (config.json)
+
+Functionality:
+Stores WordPress installation details.
+Saves plugin selections.
+Saves GraphQL endpoint for headless integration.
+
+3. Installation & Automation
+
+Process Flow:
+User complete the form and upoad the Excel file with free plugins and the premium plugins are stored in.
+app.py processes the file and generates config.json.
+If Docker is selected:
+generate_docker_compose.py creates docker-compose.yml.
+Docker containers are automatically started.
+Plugins are installed via WP-CLI (WordPress Command Line Interface).
+WordPress is configured based on config.json.
+Success message is displayed once everything is complete.
+
+4. Technical Requirements
+
+Python 3.x (for Flask backend)
+Docker (if selected)
+WP-CLI (for plugin installations)
+Excel Processing Libraries (pandas, openpyxl)
+JavaScript & Fetch API (for form handling)
+GraphQL integration (future integration for headless WP)
+
+5. Pending Issues & Questions
+
+Next Steps
+Upload all necessary project files (app.py, form-handler.js, config-template.xlsx, etc.).
+Review and confirm the project overview.
+Debug and systematically fix outstanding issues.
+
+
+#### Tree structure ####
+PS D:\GitRepos\hwp-auto> tree /F
+Folder PATH listing for volume DEV schrijf
+Volume serial number is 82D1-9C55
+D:.
+│   .gitignore
+│   README.md
+│
+├───.github
+│   └───workflows
+│           agile_pipeline_integration.yml
+│           backup_and_restore.yml
+│           deploy.yml
+│
+├───config
+│   │   available-plugins.xlsx
+│   │   config-template.xlsx
+│   │   config.json
+│   │   nginx.conf
+│   │   wp-config.php
+│   │
+│   ├───example-data
+│   │       sample-plugins.json
+│   │       sample-posts.json
+│   │
+│   └───premium-plugins
+│           0fBFdJ1vr8LP-bit-integrations-pro-v2.4.4n.zip
+│           0qP8ZUfFAmRL-seo-by-rank-math-pro-3.0.82.zip
+│           8SgBDCoH5vEK-acf-extended-pro-0.9.0.9.zip
+│           acf-for-woocommerce.zip
+│           automatorwp-advanced-custom-fields.zip
+│           CDXErI7hzOMs-newsletter-fluentforms-1.1.7.zip
+│           dV1mnyyiYGj8-wordfence-8.0.3.zip
+│           EchQUwGdPBgI-fluentformpro-5.2.10.zip
+│           Fp1PuQhF14pd-automatorwp-fluentform.zip
+│           mMawTQ0fL8nT-ithemes-security-pro-8.5.3.zip
+│           MTsdVui9hDvv-yith-woocommerce-social-login-premium.zip
+│           r5YRptcgSjlN-mainwp-rocket-extension-5.1.2.zip
+│           S5IbX4DFEKoM-automatorwp-webhooks-1.3.7.zip
+│           WGlmlLL6miCm-automatorwp-5.1.5.zip
+│           xxvyfvGMSCL4-wp-smush-pro-3.17.1.zip
+│
+├───docker
+│       docker-compose.yml
+│       Dockerfile
+│
+├───scripts
+│   │   app.py
+│   │   backup_and_restore.sh
+│   │   configure_wp.py
+│   │   data_migration.sh
+│   │   form_data_handler.py
+│   │   generate_docker_compose.py
+│   │   generate_report.py
+│   │   healthcheck.sh
+│   │   init_wordpress.sh
+│   │   manage_plugins.sh
+│   │
+│   └───__pycache__
+│           form_data_handler.cpython-313.pyc
+│           generate_docker_compose.cpython-313.pyc
+│
+├───tests
+│   ├───integration
+│   │       test_graphql_queries.sh
+│   │
+│   ├───test_data
+│   │       test-config.json
+│   │       test-plugins.json
+│   │
+│   └───unit
+│           test_install_plugins.sh
+│
+└───web
+    │   index.html
+    │
+    ├───assets
+    │       logo.png
+    │
+    ├───css
+    │       styles.css
+    │
+    └───js
+            form-handler.js
+
