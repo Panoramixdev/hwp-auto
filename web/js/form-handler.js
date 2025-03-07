@@ -85,6 +85,20 @@ document.addEventListener("DOMContentLoaded", async function () {
     } catch (error) {
       console.error("Fout bij loadAvailablePlugins:", error);
     }
+    // Toevoegen "Alles selecteren" optie per categorie
+document.querySelectorAll('.plugin-category').forEach(category => {
+  const selectAll = document.createElement('input');
+  selectAll.type = 'checkbox';
+  selectAll.onclick = () => {
+    category.querySelectorAll('input[type="checkbox"]').forEach(box => box.checked = selectAll.checked);
+  };
+
+  const label = document.createElement('label');
+  label.textContent = ' Alles selecteren';
+  label.prepend(selectAll);
+  
+  category.prepend(label);
+});
   }
   
   /**

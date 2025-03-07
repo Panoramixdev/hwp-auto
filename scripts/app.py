@@ -2,26 +2,21 @@ import os
 import json
 import traceback
 import pandas as pd
+import subprocess
 from flask import Flask, request, jsonify, render_template
 
 from form_data_handler import process_excel
 from generate_docker_compose import generate_docker_compose
 
-app = Flask(
-    __name__,
-    template_folder="../web",
-    static_folder="../web",
-    static_url_path="/static"
-)
+app = Flask(__name__, template_folder="../web", static_folder="../web", static_url_path="/static")
 
 UPLOAD_FOLDER = "config"
-PLUGIN_JSON_PATH = "config/available-plugins.json"
-CONFIG_JSON_PATH = "config/config.json"
+PLUGIN_JSON_PATH = os.path.join(UPLOAD_FOLDER, "available-plugins.json")
+CONFIG_JSON_PATH = os.path.join(UPLOAD_FOLDER, "config.json")
 EXCEL_FILENAME = "available-plugins.xlsx"
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
 def generate_plugin_list():
-    """(Her)genereer de pluginlijst op basis van config/available-plugins.xlsx + premium map."""
     file_path = os.path.join(UPLOAD_FOLDER, EXCEL_FILENAME)
     plugins = {}
     if os.path.exists(file_path):
@@ -35,11 +30,9 @@ def generate_plugin_list():
                 }
                 plugins.setdefault(cat, []).append(plugin)
         except Exception as e:
-            print(f"Fout in {EXCEL_FILENAME}: {e}")
+            print(f"Fout bij lezen {EXCEL_FILENAME}: {e}")
             traceback.print_exc()
-
-    # Premium plugins
-    premium_folder = "config/premium-plugins"
+    premium_folder = os.path.join(UPLOAD_FOLDER, "premium-plugins")
     if os.path.exists(premium_folder):
         plugins["Premium Plugins"] = []
         for f in os.listdir(premium_folder):
@@ -49,7 +42,6 @@ def generate_plugin_list():
                     "url": f"/config/premium-plugins/{f}",
                     "compatibility": "N/A"
                 })
-
     with open(PLUGIN_JSON_PATH, "w", encoding="utf-8") as pf:
         json.dump(plugins, pf, indent=2)
     print("✅ available-plugins.json hernieuwd!")
@@ -60,7 +52,6 @@ def index():
 
 @app.route("/config/config.json", methods=["GET"])
 def get_current_config():
-    """Maak config.json toegankelijk, zodat de frontend deze kan ophalen."""
     if not os.path.exists(CONFIG_JSON_PATH):
         return jsonify({"status": "⚠️ config.json niet gevonden"}), 404
     try:
@@ -73,7 +64,6 @@ def get_current_config():
 
 @app.route("/config/available-plugins.json", methods=["GET"])
 def get_available_plugins():
-    """Geef de beschikbare pluginlijst terug."""
     if not os.path.exists(PLUGIN_JSON_PATH):
         return jsonify({"status": "⚠️ available-plugins.json niet gevonden"}), 404
     try:
@@ -87,7 +77,6 @@ def get_available_plugins():
 
 @app.route("/config/update-graphql", methods=["POST"])
 def update_graphql():
-    """Mock-route om GraphQL-endpoint te 'ontvangen'."""
     try:
         data = request.get_json()
         endpoint = data.get("graphqlEndpoint", "")
@@ -104,23 +93,24 @@ def upload_excel():
         if not excel_file:
             return jsonify({"status": "Geen excel_file ontvangen"}), 400
 
-        # Sla als 'temp_plugins.xlsx' op
         temp_path = os.path.join(app.config["UPLOAD_FOLDER"], "temp_plugins.xlsx")
         excel_file.save(temp_path)
 
-        # Lees Excel direct in
         plugins = {}
-        df = pd.read_excel(temp_path)
-        for _, row in df.iterrows():
-            cat = row["Categorie"]
-            plugin_data = {
-                "name": row["Plugin Naam"],
-                "url": row["Plugin URL"]
-            }
-            plugins.setdefault(cat, []).append(plugin_data)
+        try:
+            df = pd.read_excel(temp_path)
+            for _, row in df.iterrows():
+                cat = row["Categorie"]
+                plugin_data = {
+                    "name": row["Plugin Naam"],
+                    "url": row["Plugin URL"]
+                }
+                plugins.setdefault(cat, []).append(plugin_data)
+        except Exception as e:
+            print("Fout bij lezen van temp_plugins.xlsx:", e)
+            return jsonify({"status": "Error bij inlezen Excel"}), 500
 
-        # Voeg Premium Plugins toe
-        premium_folder = "config/premium-plugins"
+        premium_folder = os.path.join(app.config["UPLOAD_FOLDER"], "premium-plugins")
         if os.path.exists(premium_folder):
             plugins["Premium Plugins"] = []
             for f in os.listdir(premium_folder):
@@ -131,10 +121,9 @@ def upload_excel():
                         "compatibility": "N/A"
                     })
 
-        # Schrijf naar available-plugins.json
-        with open(os.path.join(app.config["UPLOAD_FOLDER"], "available-plugins.json"), "w", encoding="utf-8") as pf:
+        with open(PLUGIN_JSON_PATH, "w", encoding="utf-8") as pf:
             json.dump(plugins, pf, indent=2)
-
+        print("✅ available-plugins.json bijgewerkt via temp_plugins.xlsx")
         return jsonify({"status": "OK"})
     except Exception as e:
         print("Fout bij upload_excel:", e)
@@ -143,14 +132,9 @@ def upload_excel():
 
 @app.route("/upload-config", methods=["POST"])
 def upload_config():
-    """
-    Verwerkt het geüploade Excel-bestand + genereert config.json en pluginlijst.
-    Wordt normaliter aangeroepen bij de 'Installatie'-knop.
-    """
     try:
         excel_file = request.files.get("config_file")
         hosting_type = request.form.get("hosting_type")
-
         form_data = {
             "site_title": request.form.get("site_title", "Default Site"),
             "admin_user": request.form.get("admin_user", "admin"),
@@ -159,20 +143,47 @@ def upload_config():
         }
 
         if excel_file:
-            # Sla geüploade Excel op
             file_path = os.path.join(app.config["UPLOAD_FOLDER"], excel_file.filename)
             excel_file.save(file_path)
-            # Genereer config.json (site_title, plugins, enz)
             process_excel(file_path, CONFIG_JSON_PATH, form_data)
-            # (Her)genereer pluginlijst => available-plugins.json
             generate_plugin_list()
         else:
             print("⚠️ Geen nieuw Excel-bestand ontvangen, alleen form-data.")
 
-        # Indien Docker
         if hosting_type == "docker":
             print("Docker geselecteerd, genereer docker-compose.yml...")
             generate_docker_compose(CONFIG_JSON_PATH, "docker/docker-compose.yml")
+           
+            requirements = [
+             "Flask>=2.0.0",
+             "pandas>=1.3.0",
+             "openpyxl>=3.0.0"
+             "psycopg2-binary>=2.9.0"
+             ]
+            
+            requirements_path = os.path.join(os.path.dirname(__file__), "requirements.txt")
+            with open(requirements_path, "w") as req_file:
+                req_file.write("\n".join(requirements))
+            print("✅ requirements.txt automatisch gegenereerd met psycopg2-binary!")
+            
+            dockerfile_path = os.path.join(os.path.dirname(__file__), "..", "docker", "Dockerfile")
+            if not os.path.exists(dockerfile_path) or os.path.getsize(dockerfile_path) == 0:
+                print("📝 Geen Dockerfile gevonden, maak een automatische Dockerfile...")
+                dockerfile_content = """\
+FROM python:3.10-slim
+WORKDIR /app
+COPY ./scripts /app/scripts
+COPY ./scripts/app.py /app/app.py 
+COPY ./requirements.txt /app/requirements.txt
+RUN pip install --no-cache-dir -r /app/requirements.txt
+EXPOSE 5000
+CMD ["python", "/app/scripts/app.py"]
+"""
+                with open(dockerfile_path, "w", encoding="utf-8") as df:
+                    df.write(dockerfile_content)
+                print("✅ Dockerfile automatisch aangemaakt!")
+
+            subprocess.run(["docker-compose", "up", "-d"], cwd="docker")
 
         return jsonify({"status": "✅ Installatieconfig geüpload!"})
     except Exception as e:
@@ -180,7 +191,6 @@ def upload_config():
         traceback.print_exc()
         return jsonify({"status": "⚠️ Mislukt"}), 500
 
-# Optionele route om handmatig /config/available-plugins.xlsx in te lezen
 @app.route("/config/load-plugins", methods=["POST"])
 def load_plugins_manually():
     try:

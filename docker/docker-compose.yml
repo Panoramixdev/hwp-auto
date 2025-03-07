@@ -1,0 +1,81 @@
+
+services:
+
+  wordpress:
+    image: wordpress:latest
+    container_name: wordpress
+    volumes:
+      - ../config/config.json:/var/www/html/config.json
+      - ../scripts/init_wordpress.sh:/var/www/html/init_wordpress.sh
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_NAME: wp_news_site
+      WORDPRESS_DB_USER: root
+      WORDPRESS_DB_PASSWORD: yourpassword
+    ports:
+      - "8080:80"
+    restart: always
+    entrypoint: ["sh", "/var/www/html/init_wordpress.sh"]
+    networks:
+      - agile_network
+    
+
+  db:
+    image: mariadb:latest
+    container_name: db
+    environment:
+      MYSQL_ROOT_PASSWORD: yourpassword
+      MYSQL_DATABASE: wp_news_site
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    restart: always
+    networks:
+      - agile_network
+    
+
+  app-server:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: app-server
+    ports:
+      - "5000:5000"
+    volumes:
+      - ../config:/app/config
+      - ../scripts:/app/scripts
+    command: ["python3", "app.py"]
+    depends_on:
+      - db
+      - wordpress
+    restart: always
+    networks:
+      - agile_network
+    
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx-server
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ../config/nginx.conf:/etc/nginx/nginx.conf
+      - ../web:/usr/share/nginx/html
+      - ../config/ssl:/etc/nginx/ssl
+    depends_on:
+      - wordpress
+      - app-server
+    restart: always
+    networks:
+      - agile_network
+    
+
+volumes:
+  db_data:
+
+networks:
+  agile_network:
+    external: true
+    

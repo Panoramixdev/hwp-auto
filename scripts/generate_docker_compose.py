@@ -1,14 +1,12 @@
-# generate_docker_compose.py: Genereert het docker-compose.yml bestand dynamisch op basis van config.json
-
 import json
 import os
 
 def generate_docker_compose(config_path: str = 'config/config.json', output_file: str = 'docker/docker-compose.yml'):
     """
-    Genereert dynamisch het docker-compose.yml bestand op basis van input uit config.json.
+    Genereert het docker-compose.yml bestand dynamisch voor WordPress (headless setup).
     """
 
-    # Laad de configuratiegegevens uit config.json
+    # Lees configuratie uit config.json
     with open(config_path, 'r') as file:
         config = json.load(file)
 
@@ -29,26 +27,12 @@ def generate_docker_compose(config_path: str = 'config/config.json', output_file
       - "{config.get('wp_port', '8080')}:80"
     restart: always
     entrypoint: ["sh", "/var/www/html/init_wordpress.sh"]
+    networks:
+      - agile_network
     """
 
-    # Database service configuratie (MariaDB of PostgreSQL)
-    if config.get('database_type', 'MariaDB') == 'PostgreSQL':
-        db_service = f"""
-  db:
-    image: postgres:latest
-    container_name: db
-    environment:
-      POSTGRES_USER: {config.get('db_user', 'postgres')}
-      POSTGRES_PASSWORD: {config.get('db_password', 'yourpassword')}
-      POSTGRES_DB: {config.get('db_name', 'wp_news_site')}
-    ports:
-      - "{config.get('db_port', '5432')}:5432"
-    volumes:
-      - db_data:/var/lib/postgresql/data
-    restart: always
-        """
-    else:
-        db_service = f"""
+    # Database service configuratie (MariaDB)
+    db_service = f"""
   db:
     image: mariadb:latest
     container_name: db
@@ -60,33 +44,11 @@ def generate_docker_compose(config_path: str = 'config/config.json', output_file
     volumes:
       - db_data:/var/lib/mysql
     restart: always
-        """
+    networks:
+      - agile_network
+    """
 
-    # Redis service (optioneel)
-    redis_service = ""
-    if config.get('enable_redis', False):
-        redis_service = """
-  redis:
-    image: redis:alpine
-    container_name: redis-cache
-    ports:
-      - "6379:6379"
-    restart: always
-        """
-
-    # n8n service (optioneel)
-    n8n_service = ""
-    if config.get('enable_n8n', False):
-        n8n_service = """
-  n8n:
-    image: n8nio/n8n
-    container_name: n8n-automation
-    ports:
-      - "5678:5678"
-    restart: always
-        """
-
-    # NGINX service als reverse proxy
+    # NGINX reverse proxy service
     nginx_service = f"""
   nginx:
     image: nginx:latest
@@ -102,12 +64,16 @@ def generate_docker_compose(config_path: str = 'config/config.json', output_file
       - wordpress
       - app-server
     restart: always
+    networks:
+      - agile_network
     """
 
-    # Flask backend service voor formulierverwerking
+    # Flask backend (app-server)
     app_service = f"""
   app-server:
-    build: ../scripts
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
     container_name: app-server
     ports:
       - "5000:5000"
@@ -119,26 +85,29 @@ def generate_docker_compose(config_path: str = 'config/config.json', output_file
       - db
       - wordpress
     restart: always
+    networks:
+      - agile_network
     """
 
-    # Combineer alle services in het Docker Compose bestand
+    # Samengevoegde docker-compose.yml inhoud
     docker_compose_content = f"""
-version: '3.9'
-
+name: WP_Project # Naam van het project     
 services:
 {wordpress_service}
 {db_service}
-{redis_service}
-{n8n_service}
 {app_service}
 {nginx_service}
 
 volumes:
   db_data:
+
+networks:
+  agile_network:
+    external: true
     """
 
-    # Schrijf het dynamisch gegenereerde docker-compose.yml bestand
+    # Schrijf naar het bestand
     with open(output_file, 'w') as file:
         file.write(docker_compose_content)
 
-    print(f"✅ Dynamisch docker-compose.yml bestand aangemaakt: {output_file}")
+    print(f"✅ docker-compose.yml aangemaakt op: {output_file}")
